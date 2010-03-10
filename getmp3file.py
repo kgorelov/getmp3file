@@ -45,6 +45,30 @@ class MP3Parser:
 
 ################################################################################
 
+class TMPFileParser:
+    def __init__(self, url):
+        self.url = url
+
+    def parse(self):
+        eparser = html5lib.HTMLParser(tree=treebuilders.getTreeBuilder("lxml", ElementTree))
+        #debug("Downloading: '%s'" % self.url)
+        reader = urllib2.urlopen(self.url)
+        page = reader.read()
+        self.url = reader.geturl()
+        urlp = urlparse(self.url)
+        self.baseurl = urlp.scheme + "://" + urlp.netloc
+        page = page.replace('xml:lang="ru"', '')
+        et = eparser.parse(page)
+        form = et.xpath("//form[starts-with(@action,'/file')]")[0]
+        self.action = form.attrib['action']
+        self.robot_code = form.xpath("//input[@name='robot_code']")[0].attrib['value']
+
+    def download(self):
+        url = self.baseurl + self.action
+        info("Downloading from tmpfile: %s" % url)
+        debug("robot code: %s" % self.robot_code)
+
+################################################################################
 
 class Main:
     def __init__(self):
@@ -98,8 +122,11 @@ class Main:
         debug("Album directory: %s", self.album_dir)
         self.make_dir(self.album_dir)
 
-        #for song in mp3.get_songs():
-        #    tmpfp = TMPFileParser(song)
+        songs = mp3.get_songs()
+        for song in songs:
+            tmpfp = TMPFileParser(songs[song])
+            tmpfp.parse()
+            tmpfp.download()
         #print mp3.get_songs() # XXX RMME
         return 0
 
