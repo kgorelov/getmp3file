@@ -7,7 +7,9 @@
 
 
 import os
+import re
 import sys
+import urllib
 import urllib2
 import optparse
 import logging
@@ -29,7 +31,7 @@ class MP3Parser:
     def parse(self):
         eparser = html5lib.HTMLParser(tree=treebuilders.getTreeBuilder("lxml", ElementTree))
         et = eparser.parse(urllib2.urlopen(self.url).read())
-        self.album = et.xpath("//div[@id='MP3']/h2[2]")[0].text.encode("utf8")
+        self.album = et.xpath("//div[@id='MP3']//h2[last()]")[-1].text.encode("utf8")
         info("Album name: %s" % self.album)
         refs = et.xpath("//table[@class='video']/tbody/tr/td[1]/a")
         self.songs = {}
@@ -63,10 +65,37 @@ class TMPFileParser:
         self.action = form.attrib['action']
         self.robot_code = form.xpath("//input[@name='robot_code']")[0].attrib['value']
 
-    def download(self):
+    def download(self, directory, filename = None):
         url = self.baseurl + self.action
         info("Downloading from tmpfile: %s" % url)
         debug("robot code: %s" % self.robot_code)
+        values = {'robot_code': self.robot_code}
+        data = urllib.urlencode(values)
+        req = urllib2.Request(url, data)
+        response = urllib2.urlopen(req)
+
+        page = response.read()
+        page = page.replace('xml:lang="ru"', '') 
+        eparser = html5lib.HTMLParser(tree=treebuilders.getTreeBuilder("lxml", ElementTree))
+        doc = eparser.parse(page)
+        url = doc.xpath("//div[@id='cntMain']//center//a")[0].text
+        response = urllib2.urlopen(url)
+
+        inf = response.info()
+        if filename is None:
+            match = re.search('filename="(.*)"', inf['Content-Disposition'])
+            filename = match.group(1)
+
+        debug("Destination directory: %s" % directory)
+        debug("Destination file: %s" % filename)
+        self.save(response, directory + '/' + filename)
+
+    def save(self, fd_in, filename):
+        try:
+            fd_out = open(filename, 'w')
+            fd_out.write(fd_in.read())
+        except IOError, e:
+            error("Error saving file %s: %s" (filename, repr(e)))
 
 ################################################################################
 
@@ -79,6 +108,11 @@ class Main:
                           dest = 'dry',
                           action = 'store_true',
                           help = 'Dry run. Do not download files, only traverse through pages')
+
+        parser.add_option('-f', '--filenames',
+                          dest = 'filenames',
+                          action = 'store_true',
+                          help = 'Store downloaded files under names parsed from the webpage')
 
         (self.options, self.arguments) = parser.parse_args()
 
@@ -126,8 +160,12 @@ class Main:
         for song in songs:
             tmpfp = TMPFileParser(songs[song])
             tmpfp.parse()
-            tmpfp.download()
-        #print mp3.get_songs() # XXX RMME
+
+            filename = None
+            if self.options.filenames:
+                filename =  song + ".mp3"
+            
+            tmpfp.download(self.album_dir, filename)
         return 0
 
 
