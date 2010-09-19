@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<todo version="0.1.20">
+    <note priority="high" time="1272452874">
+        Support "allsongs" type of links
+    </note>
+    <note priority="medium" time="1268693812">
+        Support downloading album cover images
+    </note>
+    <note priority="medium" time="1268693822">
+        Implement GUI
+    </note>
+    <note priority="medium" time="1268693878">
+        Support parsing the page that lists all albums
+    </note>
+    <note priority="medium" time="1268693912">
+        Add retries for pages and files that failed to download
+    </note>
+    <note priority="medium" time="1268693945">
+        Implement downloading of a single file, support resuming
+    </note>
+</todo>

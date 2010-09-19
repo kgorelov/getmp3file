@@ -27,11 +27,20 @@ class MP3Parser:
         self.url = url
         urlp = urlparse(url)
         self.baseurl = urlp.scheme + "://" + urlp.netloc;
+        self.parser = html5lib.HTMLParser(
+            tree=treebuilders.getTreeBuilder("lxml", ElementTree))
 
     def parse(self):
-        eparser = html5lib.HTMLParser(tree=treebuilders.getTreeBuilder("lxml", ElementTree))
-        et = eparser.parse(urllib2.urlopen(self.url).read())
-        self.album = et.xpath("//div[@id='MP3']//h2[last()]")[-1].text.encode("utf8")
+        et = self.parser.parse(urllib2.urlopen(self.url).read())
+        return et
+
+################################################################################
+
+class MP3SongsParser(MP3Parser):
+    def parse_songs(self):
+        et = self.parse()
+        self.album = et.xpath("//div[@id='MP3']//h2[last()]")[-1].text.encode(
+            "utf8")
         info("Album name: %s" % self.album)
         refs = et.xpath("//table[@class='video']/tbody/tr/td[1]/a")
         self.songs = {}
@@ -45,6 +54,51 @@ class MP3Parser:
     def get_songs(self):
         return self.songs
 
+################################################################################
+
+class MP3AlbumsParser(MP3Parser):
+    def parse_songs(self):
+        et = self.parse()
+
+        refs = et.xpath("//table[@class='video']/tbody/tr/td[1]/a")
+        self.songs = {}
+        for r in refs:
+            self.songs[r.text] = self.baseurl + r.attrib['href'];
+            info("Found album: %s" % r.text)
+
+    def get_albums(self):
+        return self.albums
+
+#
+#class MP3SongsParser(MP3Parser):
+#    def __init__(self, url):
+#        self.url = url
+#        urlp = urlparse(url)
+#        self.baseurl = urlp.scheme + "://" + urlp.netloc;
+#
+#    # add parse band method
+#    # XXX 2DO: rename this method to parse_album
+#    def parse_albums(self, url):
+#        debug("parsing albums...")
+#    # .xpath("//div[@id='MP3']//div[@class='album']/a")
+#
+#    def parse_songs(self):
+#        eparser = html5lib.HTMLParser(tree=treebuilders.getTreeBuilder("lxml", ElementTree))
+#        et = eparser.parse(urllib2.urlopen(self.url).read())
+#        self.album = et.xpath("//div[@id='MP3']//h2[last()]")[-1].text.encode("utf8")
+#        info("Album name: %s" % self.album)
+#        refs = et.xpath("//table[@class='video']/tbody/tr/td[1]/a")
+#        self.songs = {}
+#        for r in refs:
+#            self.songs[r.text] = self.baseurl + r.attrib['href'];
+#            info("Found song: %s" % r.text)
+#
+#    def get_album(self):
+#        return self.album
+#
+#    def get_songs(self):
+#        return self.songs
+#
 ################################################################################
 
 class TMPFileParser:
@@ -147,13 +201,19 @@ class Main:
             debug("Creating album directory: %s", f)
             os.makedirs(f)
 
-    def run(self):
-        info("Dowloading %s" % self.url)
-        mp3 = MP3Parser(self.url)
-        mp3.parse()
+    def download_albums(self, url):
+        debug("XXX Implement me")
+
+    def download_songs(self, url):
+        mp3 = MP3SongsParser(self.url)
+        mp3.parse_songs()
         # Create album directory under dest
         self.album_dir = self.dest + "/" + mp3.get_album()
         debug("Album directory: %s", self.album_dir)
+
+        if self.options.dry:
+            return
+        
         self.make_dir(self.album_dir)
 
         songs = mp3.get_songs()
@@ -166,6 +226,13 @@ class Main:
                 filename =  song + ".mp3"
             
             tmpfp.download(self.album_dir, filename)
+
+    def run(self):
+        info("Dowloading %s" % self.url)
+        # XXX 2DO: Match the url against a regexp,
+        # call down_songs or down_albums
+        # Make sure to use command line options to override defaults
+        self.download_songs(self.url)
         return 0
 
 
