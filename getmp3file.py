@@ -31,7 +31,10 @@ class MP3Parser:
             tree=treebuilders.getTreeBuilder("lxml", ElementTree))
 
     def parse(self):
-        et = self.parser.parse(urllib2.urlopen(self.url).read())
+        reader = urllib2.urlopen(self.url)
+        page = reader.read()
+        page = page.replace('xml:lang="ru"', '')
+        et = self.parser.parse(page)
         return et
 
 ################################################################################
@@ -39,10 +42,12 @@ class MP3Parser:
 class MP3SongsParser(MP3Parser):
     def parse_songs(self):
         et = self.parse()
-        self.album = et.xpath("//div[@id='MP3']//h2[last()]")[-1].text.encode(
-            "utf8")
+        year = et.xpath("//div[@class='Name']/i")[0].text.encode("utf8").strip()
+        if len(year):
+            year += " - ";
+        self.album = year + et.xpath("//div[@class='Name']")[0].text.encode("utf8").strip()
         info("Album name: %s" % self.album)
-        refs = et.xpath("//table[@class='video']/tbody/tr/td[1]/a")
+        refs = et.xpath("//div[@class='albSong']/div/a[1]")
         self.songs = {}
         for r in refs:
             self.songs[r.text] = self.baseurl + r.attrib['href'];
