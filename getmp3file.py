@@ -74,36 +74,6 @@ class MP3AlbumsParser(MP3Parser):
     def get_albums(self):
         return self.albums
 
-#
-#class MP3SongsParser(MP3Parser):
-#    def __init__(self, url):
-#        self.url = url
-#        urlp = urlparse(url)
-#        self.baseurl = urlp.scheme + "://" + urlp.netloc;
-#
-#    # add parse band method
-#    # XXX 2DO: rename this method to parse_album
-#    def parse_albums(self, url):
-#        debug("parsing albums...")
-#    # .xpath("//div[@id='MP3']//div[@class='album']/a")
-#
-#    def parse_songs(self):
-#        eparser = html5lib.HTMLParser(tree=treebuilders.getTreeBuilder("lxml", ElementTree))
-#        et = eparser.parse(urllib2.urlopen(self.url).read())
-#        self.album = et.xpath("//div[@id='MP3']//h2[last()]")[-1].text.encode("utf8")
-#        info("Album name: %s" % self.album)
-#        refs = et.xpath("//table[@class='video']/tbody/tr/td[1]/a")
-#        self.songs = {}
-#        for r in refs:
-#            self.songs[r.text] = self.baseurl + r.attrib['href'];
-#            info("Found song: %s" % r.text)
-#
-#    def get_album(self):
-#        return self.album
-#
-#    def get_songs(self):
-#        return self.songs
-#
 ################################################################################
 
 class TMPFileParser:
