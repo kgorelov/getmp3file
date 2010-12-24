@@ -42,12 +42,12 @@ class MP3Parser:
 class MP3SongsParser(MP3Parser):
     def parse_songs(self):
         et = self.parse()
-        year = et.xpath("//div[@class='Name']/i")[0].text.encode("utf8").strip()
+        year = et.xpath("//xhtml:div[@class='Name']/xhtml:i", namespaces={'xhtml':'http://www.w3.org/1999/xhtml'})[0].text.encode("utf8").strip()
         if len(year):
             year += " - ";
-        self.album = year + et.xpath("//div[@class='Name']")[0].text.encode("utf8").strip()
+        self.album = year + et.xpath("//xhtml:div[@class='Name']", namespaces={'xhtml':'http://www.w3.org/1999/xhtml'})[0].text.encode("utf8").strip()
         info("Album name: %s" % self.album)
-        refs = et.xpath("//div[@class='albSong']/div/a[1]")
+        refs = et.xpath("//xhtml:div[@class='albSong']/xhtml:div/xhtml:a[1]", namespaces={'xhtml':'http://www.w3.org/1999/xhtml'})
         self.songs = {}
         for r in refs:
             self.songs[r.text] = self.baseurl + r.attrib['href'];
@@ -65,7 +65,7 @@ class MP3AlbumsParser(MP3Parser):
     def parse_songs(self):
         et = self.parse()
 
-        refs = et.xpath("//table[@class='video']/tbody/tr/td[1]/a")
+        refs = et.xpath("//xhtml:table[@class='video']/xhtml:tbody/xhtml:tr/xhtml:td[1]/xhtml:a", namespaces={'xhtml':'http://www.w3.org/1999/xhtml'})
         self.songs = {}
         for r in refs:
             self.songs[r.text] = self.baseurl + r.attrib['href'];
@@ -120,9 +120,9 @@ class TMPFileParser:
         self.baseurl = urlp.scheme + "://" + urlp.netloc
         page = page.replace('xml:lang="ru"', '')
         et = eparser.parse(page)
-        form = et.xpath("//form[starts-with(@action,'/file')]")[0]
+        form = et.xpath("//xhtml:form[starts-with(@action,'/file')]", namespaces={'xhtml':'http://www.w3.org/1999/xhtml'})[0]
         self.action = form.attrib['action']
-        self.robot_code = form.xpath("//input[@name='robot_code']")[0].attrib['value']
+        self.robot_code = form.xpath("//xhtml:input[@name='robot_code']", namespaces={'xhtml':'http://www.w3.org/1999/xhtml'})[0].attrib['value']
 
     def download(self, directory, filename = None):
         url = self.baseurl + self.action
@@ -137,7 +137,7 @@ class TMPFileParser:
         page = page.replace('xml:lang="ru"', '') 
         eparser = html5lib.HTMLParser(tree=treebuilders.getTreeBuilder("lxml", ElementTree))
         doc = eparser.parse(page)
-        url = doc.xpath("//div[@id='cntMain']//center//a")[0].text
+        url = doc.xpath("//xhtml:div[@id='cntMain']//xhtml:center//xhtml:a", namespaces={'xhtml':'http://www.w3.org/1999/xhtml'})[0].text
         response = urllib2.urlopen(url)
 
         inf = response.info()
