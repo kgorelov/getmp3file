@@ -7,6 +7,7 @@
 
 
 import os
+import os.path
 import re
 import sys
 import urllib
@@ -41,12 +42,23 @@ class MP3Parser:
 
 class MP3SongsParser(MP3Parser):
     def parse_songs(self):
+        # Parse the page
         et = self.parse()
+        # Extract album year
         year = et.xpath("//xhtml:div[@class='Name']/xhtml:i", namespaces={'xhtml':'http://www.w3.org/1999/xhtml'})[0].text.encode("utf8").strip()
         if len(year):
-            year += " - ";
+            year += " - "
+        # Extract the artist name
+        self.artist = et.xpath("//xhtml:div[@id='cntMain']/xhtml:div[@id='cntCenter']/xhtml:h1/xhtml:a", namespaces={'xhtml':'http://www.w3.org/1999/xhtml'})[0].text
+        if not self.artist:
+            self.artist = 'Unknown'
+        else:
+            self.artist = self.artist.replace(' mp3','')
+        # Get the album name
         self.album = year + et.xpath("//xhtml:div[@class='Name']", namespaces={'xhtml':'http://www.w3.org/1999/xhtml'})[0].text.encode("utf8").strip()
+        debug("Artist: %s" % self.artist)
         info("Album name: %s" % self.album)
+        # Extract song references
         refs = et.xpath("//xhtml:div[@class='albSong']/xhtml:div/xhtml:a[1]", namespaces={'xhtml':'http://www.w3.org/1999/xhtml'})
         self.songs = {}
         for r in refs:
@@ -55,6 +67,9 @@ class MP3SongsParser(MP3Parser):
 
     def get_album(self):
         return self.album
+
+    def get_artist(self):
+        return self.artist
 
     def get_songs(self):
         return self.songs
@@ -130,7 +145,7 @@ class TMPFileParser:
 
 class Main:
     def __init__(self):
-        usage = "usage: %prog [options] URI DESTDIR"
+        usage = "usage: %prog [options] URI"
         parser = optparse.OptionParser(usage=usage)
 
         parser.add_option('-D', '--dry',
@@ -143,15 +158,28 @@ class Main:
                           action = 'store_true',
                           help = 'Store downloaded files under names parsed from the webpage')
 
+        parser.add_option('-m', '--mediadir',
+                          dest = 'mediadir',
+                          type = 'string',
+                          default = '~/Music',
+                          help = 'Path to your media library')
+
+        parser.add_option('-n', '--naming',
+                          dest = 'naming',
+                          type = 'string',
+                          default = 'full',
+                          help = 'Destination directory naming scheme: full (artist/album/song), album, song')
+
         (self.options, self.arguments) = parser.parse_args()
 
-        if len(self.arguments) != 2:
+        if len(self.arguments) != 1:
             parser.print_help();
             sys.exit(1);
 
         # Start url
         self.url = self.arguments[0]
-        self.dest = self.arguments[1]
+        self.dest = os.path.realpath(
+            os.path.expanduser(self.options.mediadir))
 
         # Set unbuffered stdout
         sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
@@ -183,7 +211,15 @@ class Main:
         mp3 = MP3SongsParser(self.url)
         mp3.parse_songs()
         # Create album directory under dest
-        self.album_dir = self.dest + "/" + mp3.get_album()
+        if self.options.naming == 'full':
+            self.album_dir = os.path.join(self.dest, mp3.get_artist(), mp3.get_album())
+        elif self.options.naming == 'album':
+            self.album_dir = os.path.join(self.dest, mp3.get_album())
+        elif self.options.naming == 'song':
+            self.album_dir = self.dest
+        else:
+            raise Exception("Unknown naming scheme: %s" % self.options.naming)
+
         debug("Album directory: %s", self.album_dir)
 
         if self.options.dry:
