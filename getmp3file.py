@@ -3,7 +3,7 @@
 # This script is meant to download files from musicmp3.spb.ru
 # file sharing service.
 #
-# Usage gettempfile.py 
+# Usage gettempfile.py URL
 
 
 import os
@@ -60,10 +60,11 @@ class MP3SongsParser(MP3Parser):
         info("Album name: %s" % self.album)
         # Extract song references
         refs = et.xpath("//xhtml:div[@class='albSong']/xhtml:div/xhtml:a[1]", namespaces={'xhtml':'http://www.w3.org/1999/xhtml'})
-        self.songs = {}
+        self.songs = []
         for r in refs:
-            self.songs[r.text] = self.baseurl + r.attrib['href'];
+            self.songs.append((r.text,self.baseurl + r.attrib['href']))
             info("Found song: %s" % r.text)
+            #debug("Song url: %s" % self.baseurl + r.attrib['href'])
 
     def get_album(self):
         return self.album
@@ -229,12 +230,12 @@ class Main:
 
         songs = mp3.get_songs()
         for song in songs:
-            tmpfp = TMPFileParser(songs[song])
+            tmpfp = TMPFileParser(song[1])
             tmpfp.parse()
 
             filename = None
             if self.options.filenames:
-                filename =  song + ".mp3"
+                filename =  song[0] + ".mp3"
             
             tmpfp.download(self.album_dir, filename)
 
