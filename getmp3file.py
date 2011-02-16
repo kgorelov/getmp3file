@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- Mode: python; tab-width: 4; indent-tabs-mode: nil; coding: utf-8 -*-
 
 # This script is meant to download files from musicmp3.spb.ru
 # file sharing service.
