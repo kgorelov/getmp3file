@@ -27,4 +27,7 @@
     <note priority="medium" time="1294703251">
         Do not download files that exist on the disk (add an option)
     </note>
+    <note priority="medium" time="1300123725">
+        Impossibility to download a sigle file should not abort the entire program, the file shall be skipped.
+    </note>
 </todo>

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- Mode: python; tab-width: 4; indent-tabs-mode: nil; coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This script is meant to download files from musicmp3.spb.ru
 # file sharing service.
@@ -41,24 +41,30 @@ class MP3Parser:
 
 ################################################################################
 
+def get_first_element(et, xpath):
+    try:
+        et.xpath(xpath, namespaces={'xhtml':'http://www.w3.org/1999/xhtml'})[0].text.encode("utf8").strip()
+    except IndexError:
+        return None
+
 class MP3SongsParser(MP3Parser):
     def parse_songs(self):
         # Parse the page
         et = self.parse()
         # Extract album year
-        year = et.xpath("//xhtml:div[@class='Name']/xhtml:i", namespaces={'xhtml':'http://www.w3.org/1999/xhtml'})[0].text.encode("utf8").strip()
+        year = get_first_element(et, "//xhtml:div[@class='Name']/xhtml:i") or ""
         if len(year):
             year += " - "
         # Extract the artist name
-        self.artist = et.xpath("//xhtml:div[@id='cntMain']/xhtml:div[@id='cntCenter']/xhtml:h1/xhtml:a", namespaces={'xhtml':'http://www.w3.org/1999/xhtml'})[0].text
+        self.artist = et.xpath("//xhtml:div[@id='cntMain']/xhtml:div[@id='cntCenter']/xhtml:h1/xhtml:a", namespaces={'xhtml':'http://www.w3.org/1999/xhtml'})[0].text.encode("utf8").strip()
         if not self.artist:
             self.artist = 'Unknown'
         else:
             self.artist = self.artist.replace(' mp3','')
         # Get the album name
         self.album = year + et.xpath("//xhtml:div[@class='Name']", namespaces={'xhtml':'http://www.w3.org/1999/xhtml'})[0].text.encode("utf8").strip()
-        debug("Artist: %s" % self.artist)
-        info("Album name: %s" % self.album)
+        info("Artist: %s" % self.artist)
+        info("Album: %s" % self.album)
         # Extract song references
         refs = et.xpath("//xhtml:div[@class='albSong']/xhtml:div/xhtml:a[1]", namespaces={'xhtml':'http://www.w3.org/1999/xhtml'})
         self.songs = []
