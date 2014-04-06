@@ -117,7 +117,7 @@ class TMPFileParser:
         self.action = form.attrib['action']
         self.robot_code = form.xpath("//xhtml:input[@name='robot_code']", namespaces={'xhtml':'http://www.w3.org/1999/xhtml'})[0].attrib['value']
 
-    def download(self, directory, filename = None):
+    def download(self, directory, filename=None, force=None):
         url = self.baseurl + self.action
         info("Downloading from tmpfile: %s" % url)
         debug("robot code: %s" % self.robot_code)
@@ -140,7 +140,11 @@ class TMPFileParser:
 
         debug("Destination directory: %s" % directory)
         debug("Destination file: %s" % filename)
-        self.save(response, directory + '/' + filename)
+        dstpath = os.path.join(directory, filename)
+        if os.path.exists(dstpath) and not force:
+            warn("File %s already exists, skipping")
+            return
+        self.save(response, dstpath)
 
     def save(self, fd_in, filename):
         try:
@@ -165,6 +169,11 @@ class Main:
                           dest = 'filenames',
                           action = 'store_true',
                           help = 'Store downloaded files under names parsed from the webpage')
+
+        parser.add_option('-F', '--force',
+                          dest = 'force',
+                          action = 'store_true',
+                          help = 'Force downloading, do not skip existing files')
 
         parser.add_option('-m', '--mediadir',
                           dest = 'mediadir',
@@ -244,7 +253,7 @@ class Main:
             if self.options.filenames:
                 filename =  song[0] + ".mp3"
             
-            tmpfp.download(self.album_dir, filename)
+            tmpfp.download(self.album_dir, filename, self.options.force)
 
     def run(self):
         info("Dowloading %s" % self.url)
